@@ -120,24 +120,44 @@ process bam_splitting {
             fi
             """
     else
-        """
-        #Chromium_seq
-        #index input bam file
-        samtools index ${bam} -@ 4 -o ./${bam.baseName}.bai
-        #Filter reads , Remove duplicates and split by chromosome
-        samtools view --subsample ${params.subsample} -b ${bam} -X ${bam.baseName}.bai ${chr} -D CB:${bc_path} --keep-tag "CB,UB" | samtools sort > tmp.bam
-        #Remove all PCR duplicates ...
-        samtools markdup tmp.bam ${chr}.bam -r --barcode-tag CB --barcode-tag UB
-        rm tmp.bam
-        #check if empty bam file... if yes discard from the analysis
-        samtools view ${chr}.bam | head -1 > check
-        if [ -s check ]; then
-            echo "ok"
+        if ( params.barcodes != null )
+            """
+            #Chromium_seq
+            #index input bam file
+            samtools index ${bam} -@ 4 -o ./${bam.baseName}.bai
+            #Filter reads , Remove duplicates and split by chromosome
+            samtools view --subsample ${params.subsample} -b ${bam} -X ${bam.baseName}.bai ${chr} -D CB:${bc_path} --keep-tag "CB,UB" | samtools sort > tmp.bam
+            #Remove all PCR duplicates ...
+            samtools markdup tmp.bam ${chr}.bam -r --barcode-tag CB --barcode-tag UB
+            rm tmp.bam
+            #check if empty bam file... if yes discard from the analysis
+            samtools view ${chr}.bam | head -1 > check
+            if [ -s check ]; then
+                echo "ok"
+            else
+                echo "empty chromium BAM files..."
+                rm -f ${chr}.bam
+            fi
+            """
         else
-            echo "empty chromium BAM files..."
-            rm -f ${chr}.bam
-        fi
-        """
+            """
+            #Chromium_seq
+            #index input bam file
+            samtools index ${bam} -@ 4 -o ./${bam.baseName}.bai
+            #Filter reads , Remove duplicates and split by chromosome
+            samtools view --subsample ${params.subsample} -b ${bam} -X ${bam.baseName}.bai ${chr} --keep-tag "CB,UB" | samtools sort > tmp.bam
+            #Remove all PCR duplicates ...
+            samtools markdup tmp.bam ${chr}.bam -r --barcode-tag CB --barcode-tag UB
+            rm tmp.bam
+            #check if empty bam file... if yes discard from the analysis
+            samtools view ${chr}.bam | head -1 > check
+            if [ -s check ]; then
+                echo "ok"
+            else
+                echo "empty chromium BAM files..."
+                rm -f ${chr}.bam
+            fi
+            """
 }
 
 process bedfile_conversion{
