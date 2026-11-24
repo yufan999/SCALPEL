@@ -27,7 +27,18 @@ for (idx in split(valid, ci[valid])) {
   counts[idx] <- dge[[col + 1L]][ri[idx]]
 }
 counts[is.na(counts)] <- 0
-entries <- data.table(i=match(features, feature_names), j=match(preds$bc, barcodes), x=preds$tr_prob * counts)
+stem <- sub('\\.txt$', '', args$OUTP)
+# An empty tr_prob is left by em_algorithm.R's left_join when it discards a gene ("Gene discarded", all fragment
+# probabilities 0). Such isoforms get 0 and are recorded; NaN/Inf and other non-finite values are errors.
+tr_prob <- preds$tr_prob
+discarded <- is.na(tr_prob) & !is.nan(tr_prob)
+tr_prob[discarded] <- 0
+fwrite(data.table(bc=preds$bc[discarded], gene_name=preds$gene_name[discarded], transcript_name=preds$transcript_name[discarded], gene_count=counts[discarded]), paste0(stem, '_discarded.tsv'), sep='\t')
+cat('EM-discarded records (empty tr_prob set to 0):', sum(discarded), '\n')
+x <- tr_prob * counts
+nonfinite <- which(!is.finite(x))
+if (length(nonfinite)) stop('Non-finite tr_counts (', length(nonfinite), ' records), e.g. ', features[nonfinite[1L]], ' / ', preds$bc[nonfinite[1L]])
+entries <- data.table(i=match(features, feature_names), j=match(preds$bc, barcodes), x=x)
 conflicts <- entries[, .(values=uniqueN(x)), by=.(i,j)][values > 1L]
 if (nrow(conflicts)) stop('Conflicting duplicate feature/barcode: ', feature_names[conflicts$i[1L]], ' / ', barcodes[conflicts$j[1L]])
 entries <- unique(entries, by=c('i','j'))
@@ -35,6 +46,5 @@ mat <- sparseMatrix(i=entries$i, j=entries$j, x=entries$x, dims=c(length(feature
 mat <- drop0(mat)
 print(c(features=nrow(mat), barcodes=ncol(mat), nonzero=length(mat@x)))
 writeMM(mat, args$OUTP)
-stem <- sub('\\.txt$', '', args$OUTP)
 writeLines(feature_names, paste0(stem, '_features.txt'))
 writeLines(barcodes, paste0(stem, '_barcodes.txt'))
