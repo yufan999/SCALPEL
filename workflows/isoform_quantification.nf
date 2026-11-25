@@ -104,7 +104,7 @@ process cells_merging{
 
 process dge_generation{
 	tag "${sample_id}, ${isoforms}, ${raw_dge}"
-	publishDir "${params.outputDir}/", overwrite: true, mode: 'copy'
+	publishDir "${params.outputDir}/", overwrite: true, mode: 'copy', saveAs: { fn -> fn.endsWith('_APADGE_discarded.tsv') ? "dge_discarded/${fn}" : fn }
 	cache true
     label "big_rec"
 
