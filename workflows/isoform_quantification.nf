@@ -112,7 +112,7 @@ process dge_generation{
 	tuple val(sample_id), path(isoforms), path(raw_dge)
 
 	output:
-	tuple val(sample_id), path("${sample_id}_APADGE.txt"), path("${sample_id}_seurat.RDS")
+	tuple val(sample_id), path("${sample_id}_APADGE.txt"), path("${sample_id}_seurat.RDS"), path("${sample_id}_APADGE_features.txt"), path("${sample_id}_APADGE_barcodes.txt"), path("${sample_id}_APADGE_discarded.tsv")
 	
 	script:
 	"""
