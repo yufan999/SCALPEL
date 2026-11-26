@@ -12,6 +12,11 @@
 | `src/merge_DGE_PRED.R`、`src/APAtoseurat.R`、`workflows/isoform_quantification.nf` | DGE 改为稀疏矩阵，避免 `pivot_wider` 在大数据上整数溢出（见下）；`dge_generation` 的 `publishDir` 用 `saveAs` 把 `*_APADGE_discarded.tsv` 发布到 `<outputDir>/dge_discarded/`，其余输出仍在 `<outputDir>/` |
 | `nextflow.config` | 资源设置改为作者机器的值：`params.cpus = 40`、`params.memory = 350.GB`、`time = '2000h'`、`small_rec` 的 `maxRetries = 1`（上游为 16 / 40 GB / 4h / 3） |
 
+## 测试
+
+- `Rscript tests/check_sparse_dge.R`：将稀疏 DGE 与上游 `3c31ffc` 的稠密脚本逐值对照，覆盖 EM-discarded、NaN/Inf、重复、空输入及 140000×16600 大矩阵。需要 Seurat、data.table、Matrix、argparse 等 R 包，且克隆中须有 `3c31ffc` 历史对象。
+- `python3 tests/check_dedup_tagger.py`：用合成 BAM 检查 tagger 和 samtools markdup；PATH 中需要 samtools，bam2bed 可选。
+
 ## dedup_mode
 
 - `upstream`：与上游相同的去重命令 `samtools markdup -r --barcode-tag CB --barcode-tag UB`。上游重复写了 `--barcode-tag`，实际只有 UB 生效，这里保留不改。
@@ -45,6 +50,8 @@ Chromium 分支始终使用 `-D CB:${bc_path}` 过滤细胞。未传 `--barcodes
 ## 在 scAPA_Agent 中的用法
 
 scAPA_Agent 的 `modules/05_scalpel/05_1_SCALPEL_nextflow.sh` 以 `tools/SCALPEL/main.nf` 运行本仓库，用 `--dedup_mode` 传入去重模式，用 `-c config/05_scalpel/scalpel_resources.config` 覆盖资源。多文库联合运行（一张 samplesheet、单次 Nextflow 任务）在 Agent 一侧实现，不在本仓库。
+
+scAPA_Agent 的 `make test` 不再包含这两个测试，需要时在 `tools/SCALPEL` 下按上面的命令运行。
 
 ### 关于 DIU_table.csv
 
